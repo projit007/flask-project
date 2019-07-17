@@ -19,12 +19,12 @@
 		<div class="content">
             <div>
                 <h2>{{fname}} {{lname}}</h2>
-                <h1>Profile Details:</h1>
-                <form action="{{ url_for('edit_profile') }}" method="post" enctype="multipart/form-data" autocomplete="off">
+                <h1>Edit Profile:</h1>
+                <form action="{{ url_for('profile') }}" method="post" enctype="multipart/form-data" autocomplete="off">
                     <table>
                         <div class="wrapper">
                             <img src="/static/upload_images/{{ user_image }}" alt="" border="3" />
-                            <!input type="file" name="pic" accept="image/*">
+                            <input type="file" name="pic" accept="image/*">
                         </div>
                         <tr>
                             <td>First name:</td>
@@ -43,29 +43,29 @@
 
                         <tr>
                             <td>Phone number:</td>
-                            <td>{{ phone }}</td>
+                            <td><input type="text" name="phone" value="{{ phone }}"></td>
                         </tr>
 
                         <tr>
                             <td>Date of Birth:</td>
-                            <td>{{ dob }}</td>
+                            <td><input type="text" name="dob" value="{{ dob }}"></td>
                         </tr>
 
                         <tr>
                             <td>State:</td>
-                            <td>{{ state }}</td>
+                            <td><input type="text" name="state" value="{{ state }}"></td>
                         </tr>
 
                         <tr>
                             <td>City:</td>
-                            <td>{{ city }}</td>
+                            <td><input type="text" name="city" value="{{ city }}"></td>
                         </tr>
                     </table>
                     <div class="msg">{{ msg }}</div>
-                    <label for="edit">
-                        <i class="fas fa-edit"></i>
+                    <label for="save">
+                        <i class="fas fa-save"></i>
                     </label>
-                    <input type="submit" value="Edit" id="edit">
+                    <input type="submit" value="Save & Update" id="save">
                 </form>
             </div>
 		</div>

@@ -1,21 +1,32 @@
 from flask import *
-from flask_mysqldb import MySQL as sql
+from flask_sqlalchemy import *
 import re
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
 app = Flask(__name__)
-app.secret_key= 'projit'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:12345@localhost/api'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.secret_key = 'projit'
+
+db = SQLAlchemy(app)
 
 
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = '12345'
-app.config['MYSQL_DB'] = 'api'
-app.config['UPLOAD_FOLDER'] = 'D:/Projit/Python/MyRestAPI/app/static/upload_images'
+class Employee(db.Model):
+    __tablename__= 'employee'
+    fname = db.Column('fname', db.String(255))
+    lname = db.Column('lname', db.String(255))
+    phone = db.Column('phone', db.String(255))
+    email = db.Column('email', db.String(255), primary_key=True)
+    password = db.Column('password', db.String(255))
+    dob = db.Column('dob', db.String(255))
+    state = db.Column('state', db.String(255))
+    city = db.Column('city', db.String(255))
+    image = db.Column('image', db.String(255))
 
 
-mysql = sql(app)
+mail = Employee.query.filter_by(email='test@gmail.com').first()
+print(mail.fname)
 
 
 @app.route('/', methods=['POST', 'GET'])
@@ -31,22 +42,18 @@ def login():
     if 'loggedin' in session:
         return render_template('home.html', username=session['email'])
     if request.method == "POST":
-        cur = mysql.connection.cursor()
         details = request.form
         l_password = details['password']
         l_email = details['username']
-        cur.execute("SELECT password FROM employee WHERE email = %s", [l_email])
-        hashed_password = cur.fetchone()
+        hashed_password = Employee.query.filter_by(email=l_email).first()
+        hashed_password = hashed_password.password
         hashed_password = ''.join(hashed_password)
         verify_password = check_password_hash(hashed_password, l_password)
         if verify_password:
-            cur.execute("SELECT email FROM employee WHERE email = %s", [l_email])
-            record = cur.fetchone()
-            mysql.connection.commit()
-            cur.close()
-
+            record = Employee.query.filter_by(email=l_email).first()
+            print(record.email)
             session['loggedin'] = True
-            session['email'] = record[0]
+            session['email'] = record.email
             return redirect(url_for('home'))
         else:
             error = 'Invalid Credentials. Please try again.'
@@ -61,11 +68,10 @@ def register():
         l_name = request.form['lname']
         password = request.form['password']
         hashed_password = generate_password_hash(password, method="sha256")
+        print(hashed_password)
         email = request.form['email']
         #print(email)
-        cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM employee WHERE email = %s", [email])
-        account = cur.fetchone()
+        account = Employee.query.filter_by(email=email).all()
 
         if account:
             msg = 'Account already exists!'
@@ -78,9 +84,9 @@ def register():
         elif not l_name or not f_name or not password or not email:
             msg = 'Please fill out the form!'
         else:
-            cur.execute('INSERT INTO employee(fname, lname, password, email) VALUES (%s, %s, %s, %s)', (f_name, l_name, hashed_password, email))
-            mysql.connection.commit()
-            cur.close()
+            reg = Employee(fname=f_name, lname=l_name, email=email, password=hashed_password)
+            db.session.add(reg)
+            db.session.commit()
             msg = 'You have successfully registered!'
             return render_template('login.html')
     elif request.method == 'POST':
@@ -96,33 +102,43 @@ def logout():
 
 @app.route('/profile', methods=['POST', 'GET'])
 def profile():
-    msg = ''
     if 'loggedin' in session:
-        if request.method == "POST":
-            phone = request.form['phone']
-            dob = request.form['dob']
-            state = request.form['state']
-            city = request.form['city']
-
-            # Image upload================
-            image = request.files["pic"]
-            if image.filename:
-                image.save(os.path.join(os.getcwd()+'/static/upload_images', image.filename))
-
-            # update database==================
-            cur = mysql.connection.cursor()
-            cur.execute("UPDATE employee SET phone=%s, dob=%s, state=%s, city=%s, image=%s  WHERE email=%s ", (phone, dob, state, city, image.filename, session['email']))
-            msg = 'Profile successfully updated'
-            mysql.connection.commit()
-            cur.close()
-
-        cur = mysql.connection.cursor()
-        cur.execute('SELECT * FROM employee WHERE email = %s', [session['email']])
-        account = cur.fetchone()
-        return render_template('profile.html', fname=account[0], lname=account[1], phone=account[2], email=account[3], dob=account[5], state=account[6], city=account[7], user_image=account[8], msg=msg)
+        msg = ''
+        print(session['email'])
+        if request.args:
+            msg = request.args['msg']
+        account = Employee.query.filter_by(email=session['email']).first()
+        return render_template('profile.html', fname=account.fname, lname=account.lname, phone=account.phone, email=account.email, dob=account.dob, state=account.state, city=account.city, user_image=account.image, msg=msg)
     return redirect(url_for('login'))
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/edit_profile', methods=['POST', 'GET'])
+def edit_profile():
+    account = Employee.query.filter_by(email=session['email']).first()
+    if request.method == "POST":
+        phone = request.form['phone']
+        dob = request.form['dob']
+        state = request.form['state']
+        city = request.form['city']
 
+        # Image upload================
+        image = request.files["pic"]
+        if image.filename:
+            image.save(os.path.join(os.getcwd() + '/static/upload_images', image.filename))
+
+        # update database==================
+        update = Employee.query.filter_by(email=session['email']).first()
+        update.phone = phone
+        update.dob = dob
+        update.state = state
+        update.city = city
+        update.image = image.filename
+        db.session.commit()
+        msg = 'Profile successfully updated'
+        return redirect(url_for('profile', msg=msg))
+    return render_template('edit_profile.html', fname=account.fname, lname=account.lname, phone=account.phone, email=account.email, dob=account.dob, state=account.state, city=account.city, user_image=account.image)
+
+
+if __name__ == '__main__':
+    db.create_all()
+    app.run(debug=True)
