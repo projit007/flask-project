@@ -46,8 +46,11 @@ def login():
         l_password = details['password']
         l_email = details['username']
         hashed_password = Employee.query.filter_by(email=l_email).first()
-        hashed_password = hashed_password.password
-        hashed_password = ''.join(hashed_password)
+        try:
+            hashed_password = hashed_password.password
+            hashed_password = ''.join(hashed_password)
+        except:
+            pass
         verify_password = check_password_hash(hashed_password, l_password)
         if verify_password:
             record = Employee.query.filter_by(email=l_email).first()
@@ -77,10 +80,12 @@ def register():
             msg = 'Account already exists!'
         elif not re.match(r'[^@]+@[^@]+\.[^@]+', email):
             msg = 'Invalid email address!'
-        elif not re.match(r'[A-Za-z]+', f_name):
-            msg = 'No special character or number!'
-        elif not re.match(r'[A-Za-z]+', l_name):
-            msg = 'No special character or number!'
+        elif not re.match(r'[A-Za-z]+', f_name) and len(f_name) > 3:
+            msg = 'No special character or number & atleast three alphabets!'
+        elif not re.match(r'[A-Za-z]+', l_name) and len(l_name > 4):
+            msg = 'No special character or number & atleast four alphabets!'
+        elif not password_check(password):
+            msg = "Password should contain atleast one uppercase,lowercase,numeric and special character"
         elif not l_name or not f_name or not password or not email:
             msg = 'Please fill out the form!'
         else:
@@ -114,7 +119,6 @@ def profile():
 
 @app.route('/edit_profile', methods=['POST', 'GET'])
 def edit_profile():
-    account = Employee.query.filter_by(email=session['email']).first()
     if request.method == "POST":
         phone = request.form['phone']
         dob = request.form['dob']
@@ -132,12 +136,43 @@ def edit_profile():
         update.dob = dob
         update.state = state
         update.city = city
-        update.image = image.filename
+        if image.filename:
+            update.image = image.filename
         db.session.commit()
         msg = 'Profile successfully updated'
         return redirect(url_for('profile', msg=msg))
+    account = Employee.query.filter_by(email=session['email']).first()
     return render_template('edit_profile.html', fname=account.fname, lname=account.lname, phone=account.phone, email=account.email, dob=account.dob, state=account.state, city=account.city, user_image=account.image)
 
+
+def password_check(password):
+    flag = 0
+    while True:
+        if len(password) < 8:
+            flag = 1
+            break
+        elif not re.search("[a-z]", password):
+            flag = 1
+            break
+        elif not re.search("[A-Z]", password):
+            flag = 1
+            break
+        elif not re.search("[0-9]", password):
+            flag = 1
+            break
+        elif not re.search("[_@$]", password):
+            flag = 1
+            break
+        elif re.search("\s", password):
+            flag = 1
+            break
+        else:
+            flag = 0
+            break
+    if flag == 0:
+        return True
+    else:
+        return False
 
 if __name__ == '__main__':
     db.create_all()

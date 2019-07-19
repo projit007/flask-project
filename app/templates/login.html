@@ -18,14 +18,15 @@
 				<label for="username">
 					<i class="fas fa-user"></i>
 				</label>
-				<input type="text" name="username" placeholder="Email" id="username" required><br>
+				<input type="text" name="username" placeholder="Email" id="username" required value="{{ request.form.username }}"><br>
 				<label for="password">
 					<i class="fas fa-lock"></i>
 				</label>
-				<input type="password" name="password" placeholder="Password" id="password" required><br>
-				<div class="msg">{{msg}}</div>
+				<input type="password" name="password" placeholder="Password" id="password" required value="{{ request.form.password }}"><br>
 
-				<div><a href="{{ url_for('home') }}" >  Skip  </a></div>
+				<div class="msg">{{msg}}</div><br>
+
+				<a href="{{ url_for('home') }}" >  Skip  </a>
 
 				<input type="submit" value="Login">
 			</form>

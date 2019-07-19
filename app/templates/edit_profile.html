@@ -20,7 +20,7 @@
             <div>
                 <h2>{{fname}} {{lname}}</h2>
                 <h1>Edit Profile:</h1>
-                <form action="{{ url_for('profile') }}" method="post" enctype="multipart/form-data" autocomplete="off">
+                <form action="{{ url_for('edit_profile') }}" method="post" enctype="multipart/form-data" autocomplete="off">
                     <table>
                         <div class="wrapper">
                             <img src="/static/upload_images/{{ user_image }}" alt="" border="3" />
